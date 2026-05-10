@@ -37,3 +37,12 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/petamas/python-fancy-subprocess"
 "Bug Tracker" = "https://github.com/petamas/python-fancy-subprocess/issues"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.14.1,<1.15",
+]
+
+
+[tool.mypy]
+strict = true
