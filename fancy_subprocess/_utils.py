@@ -5,12 +5,15 @@ __all__ = [
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import Optional
+from typing import TypeVar
 
 import oslex
 
 if sys.platform == 'win32':
-    from ntstatus import NtStatus, NtStatusSeverity, ThirtyTwoBits
+    from ntstatus import NtStatus
+    from ntstatus import NtStatusSeverity
+    from ntstatus import ThirtyTwoBits
 else:
     import signal
 

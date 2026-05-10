@@ -4,7 +4,8 @@ __all__ = [
 
 import io
 import sys
-from typing import Optional, TypedDict
+from typing import Optional
+from typing import TypedDict
 
 from typing_extensions import Unpack
 

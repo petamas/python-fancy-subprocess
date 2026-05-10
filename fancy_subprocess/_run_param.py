@@ -9,9 +9,11 @@ __all__ = [
     'Success',
 ]
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import Optional
+from typing import TypedDict
 
 import typeguard
 from typing_extensions import Unpack

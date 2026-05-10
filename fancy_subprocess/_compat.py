@@ -6,9 +6,11 @@ __all__ = [
     'which',
 ]
 
-from pathext import checked_which, which
+from pathext import checked_which
+from pathext import which
 
-from fancy_subprocess._run_core import RunError, RunResult
+from fancy_subprocess._run_core import RunError
+from fancy_subprocess._run_core import RunResult
 
 RunProcessError = RunError
 RunProcessResult = RunResult
