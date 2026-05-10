@@ -18,7 +18,6 @@ from fancy_subprocess._run_core import run
 from fancy_subprocess._run_param import RunParams
 from fancy_subprocess._run_param import check_run_params
 from fancy_subprocess._run_param import force_run_params
-from fancy_subprocess._utils import oslex_join
 
 
 def run_silenced(
