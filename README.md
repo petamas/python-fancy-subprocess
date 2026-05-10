@@ -255,6 +255,17 @@ Exception FileNotFoundError with message "[Errno 2] No such file or directory: '
 
 Calls `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()` with the provided parameters. Raises `TypeError` if either `sys.stdout` or `sys.stderr` is not an instance of `io.TextIOWrapper`.
 
+### `fancy_subprocess.stringify_exit_code()`
+
+Takes an exit code, and tries to format it in a way to help users understand what went wrong. If it succeeds, returns the explanation as a string. If not, returns `None`.
+
+Some examples:
+- On POSIX platforms, decodes signals to their string representation.
+- On Windows, if the code matches an NTSTATUS error, it returns the name of the NTSTATUS.
+- On Windows, if it is a 32-bit value, returns it as a hex number (because that's usually how you can find them on Google).
+
+Used as part of the error message in `RunError`.
+
 ## Licensing
 
 This library is licensed under the MIT license.
