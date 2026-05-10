@@ -19,6 +19,7 @@ from fancy_subprocess._print import default_print, PrintFunction, silenced_print
 from fancy_subprocess._run_param import AnyExitCode, check_run_params, RunParams, Success
 from fancy_subprocess._utils import oslex_join, stringify_exit_code, value_or
 
+
 @dataclass(kw_only=True, frozen=True)
 class RunResult:
     """
@@ -31,6 +32,7 @@ class RunResult:
 
     exit_code: int = 0
     output: str = ''
+
 
 @dataclass(kw_only=True, frozen=True)
 class RunError(Exception):
@@ -96,6 +98,7 @@ class RunError(Exception):
     def __str__(self) -> str:
         return self.message
 
+
 def run(
     cmd: Sequence[str | Path],
     *,
@@ -148,7 +151,7 @@ def run(
     success: Success = value_or(kwargs.get('success'), [0])
     flush_before_subprocess = value_or(kwargs.get('flush_before_subprocess'), True)
     trim_output_lines = value_or(kwargs.get('trim_output_lines'), True)
-    max_output_size = value_or(kwargs.get('max_output_size'), 10*1000*1000)
+    max_output_size = value_or(kwargs.get('max_output_size'), 10 * 1000 * 1000)
     retry = value_or(kwargs.get('retry'), 0)
     retry_initial_sleep_seconds = value_or(kwargs.get('retry_initial_sleep_seconds'), 10)
     retry_backoff = value_or(kwargs.get('retry_backoff'), 2)
@@ -169,8 +172,8 @@ def run(
         print_output = value_or(print_output, default_print)
 
     env = dict(os.environ)
-    if sys.platform=='win32':
-        env.update((key.upper(), value) for key,value in env_overrides.items())
+    if sys.platform == 'win32':
+        env.update((key.upper(), value) for key, value in env_overrides.items())
     else:
         env.update(env_overrides)
 
@@ -183,8 +186,19 @@ def run(
 
         output = ''
         try:
-            with subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, cwd=cwd, env=env, encoding=encoding, errors=errors) as proc:
-                assert proc.stdout is not None # passing stdout=subprocess.PIPE guarantees this
+            with subprocess.Popen(
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                cwd=cwd,
+                env=env,
+                encoding=encoding,
+                errors=errors,
+            ) as proc:
+                assert proc.stdout is not None  # passing stdout=subprocess.PIPE guarantees this
 
                 for line in iter(proc.stdout.readline, ''):
                     line = line.removesuffix('\n')
@@ -196,8 +210,8 @@ def run(
                     print_output(line)
 
                     output += line + '\n'
-                    if len(output)>max_output_size+1:
-                        output = output[-max_output_size-1:] # drop the beginning of the string
+                    if len(output) > max_output_size + 1:
+                        output = output[-max_output_size - 1 :]  # drop the beginning of the string
 
                 proc.wait()
                 result = RunResult(exit_code=proc.returncode, output=output.removesuffix('\n'))
@@ -215,7 +229,7 @@ def run(
             return attempt_run()
         except RunError as e:
             print_message(str(e))
-            if attempts_left!=1:
+            if attempts_left != 1:
                 plural = 's'
             else:
                 plural = ''

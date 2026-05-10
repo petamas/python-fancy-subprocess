@@ -14,6 +14,7 @@ from fancy_subprocess._run_core import run, RunResult
 from fancy_subprocess._run_param import check_run_params, force_run_params, RunParams
 from fancy_subprocess._utils import oslex_join
 
+
 def run_silenced(
     cmd: Sequence[str | Path],
     *,
@@ -41,6 +42,7 @@ def run_silenced(
         print_output=silenced_print,
         **forwarded_args,
     )
+
 
 def run_indented(
     cmd: Sequence[str | Path],

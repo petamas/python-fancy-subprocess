@@ -8,12 +8,14 @@ from typing import Optional, TypedDict
 
 from typing_extensions import Unpack
 
+
 class ReconfigureParams(TypedDict, total=False):
     encoding: Optional[str]
     errors: Optional[str]
     newline: Optional[str]
     line_buffering: Optional[bool]
     write_through: Optional[bool]
+
 
 def _reconfigure_standard_stream(stream: object, name: str, **kwargs: Unpack[ReconfigureParams]) -> None:
     if stream is None:
@@ -23,6 +25,7 @@ def _reconfigure_standard_stream(stream: object, name: str, **kwargs: Unpack[Rec
         raise TypeError(f'{name} is not a TextIOWrapper: {repr(stream)}')
 
     stream.reconfigure(**kwargs)
+
 
 def reconfigure_standard_output_streams(**kwargs: Unpack[ReconfigureParams]) -> None:
     """

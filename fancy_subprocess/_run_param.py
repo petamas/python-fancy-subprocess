@@ -16,6 +16,7 @@ from typing import Optional, TypedDict
 import typeguard
 from typing_extensions import Unpack
 
+
 class AnyExitCode:
     """
     Use an instance of this class (eg. fancy_subprocess.ANY_EXIT_CODE) as the 'success' argument to make run() and related functions treat any exit code as success.
@@ -23,11 +24,13 @@ class AnyExitCode:
 
     pass
 
+
 ANY_EXIT_CODE = AnyExitCode()
 
 Success = Sequence[int] | AnyExitCode
 
 EnvOverrides = Mapping[str, str]
+
 
 class RunParams(TypedDict, total=False):
     message_quiet: Optional[bool]
@@ -46,11 +49,14 @@ class RunParams(TypedDict, total=False):
     errors: Optional[str]
     replace_fffd_with_question_mark: Optional[bool]
 
+
 def check_run_params(**kwargs: Unpack[RunParams]) -> None:
     try:
         typeguard.check_type(kwargs, RunParams, collection_check_strategy=typeguard.CollectionCheckStrategy.ALL_ITEMS)
     except typeguard.TypeCheckError as e:
-        raise ValueError(str(e)) from None # we don't wanna expose the stacktrace from typeguard to be able to replace it with another library if needed
+        # we don't wanna expose the stacktrace from typeguard to be able to replace it with another library if needed
+        raise ValueError(str(e)) from None
+
 
 def change_default_run_params(params: RunParams, **new_defaults: Unpack[RunParams]) -> None:
     check_run_params(**params)
@@ -59,7 +65,8 @@ def change_default_run_params(params: RunParams, **new_defaults: Unpack[RunParam
     for key in new_defaults.keys():
         if params.get(key) is None:
             # It's safe to ignore the TypedDict-related checks here because of the check_run_params() calls
-            params[key] = new_defaults[key] # type: ignore[literal-required] # ty: ignore[invalid-key]
+            params[key] = new_defaults[key]  # type: ignore[literal-required] # ty: ignore[invalid-key]
+
 
 def force_run_params(params: RunParams, **forced_values: Unpack[RunParams]) -> None:
     check_run_params(**params)
@@ -70,4 +77,4 @@ def force_run_params(params: RunParams, **forced_values: Unpack[RunParams]) -> N
             raise ValueError(f'Trying to override forced keyword parameter {key} is disallowed')
         else:
             # It's safe to ignore the TypedDict-related checks here because of the check_run_params() calls
-            params[key] = forced_values[key] # type: ignore[literal-required] # ty: ignore[invalid-key]
+            params[key] = forced_values[key]  # type: ignore[literal-required] # ty: ignore[invalid-key]
