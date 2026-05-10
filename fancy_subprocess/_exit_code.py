@@ -12,10 +12,22 @@ if sys.platform == 'win32':
 else:
     import signal
 
+    def _signal_name(signal_value: int) -> Optional[str]:
+        try:
+            return signal.Signals(signal_value).name
+        except ValueError:
+            return None
+
 
 def stringify_exit_code(exit_code: int) -> Optional[str]:
     if sys.platform == 'win32':
         # Windows
+        if exit_code == 3:
+            # abort() results in exit code 3: https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/abort
+            # While exit code 3 does not necessarily mean aborted (because applications may use it as a generic error code),
+            # it's common enough to be worth handling. "?" included to signal the uncertainty.
+            return 'aborted?'
+
         if not ThirtyTwoBits.check(exit_code):
             return None
 
@@ -30,9 +42,12 @@ def stringify_exit_code(exit_code: int) -> Optional[str]:
     else:
         # POSIX
         if exit_code < 0:
-            try:
-                return signal.Signals(-exit_code).name
-            except ValueError:
-                return 'unknown signal'
+            return _signal_name(-exit_code) or 'unknown signal'
+        elif exit_code == 126:
+            return 'COULD_NOT_EXECUTE'
+        elif exit_code == 127:
+            return 'COMMAND_NOT_FOUND'
+        elif exit_code in range(129, 160):
+            return _signal_name(exit_code - 128) or 'unknown signal'
 
     return None
