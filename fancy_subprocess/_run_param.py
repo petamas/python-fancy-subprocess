@@ -59,7 +59,7 @@ def change_default_run_params(params: RunParams, **new_defaults: Unpack[RunParam
     for key in new_defaults.keys():
         if params.get(key) is None:
             # It's safe to ignore the TypedDict-related checks here because of the check_run_params() calls
-            params[key] = new_defaults[key] # type: ignore[literal-required]
+            params[key] = new_defaults[key] # type: ignore[literal-required] # ty: ignore[invalid-key]
 
 def force_run_params(params: RunParams, **forced_values: Unpack[RunParams]) -> None:
     check_run_params(**params)
@@ -70,4 +70,4 @@ def force_run_params(params: RunParams, **forced_values: Unpack[RunParams]) -> N
             raise ValueError(f'Trying to override forced keyword parameter {key} is disallowed')
         else:
             # It's safe to ignore the TypedDict-related checks here because of the check_run_params() calls
-            params[key] = forced_values[key] # type: ignore[literal-required]
+            params[key] = forced_values[key] # type: ignore[literal-required] # ty: ignore[invalid-key]

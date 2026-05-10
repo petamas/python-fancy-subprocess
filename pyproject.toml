@@ -41,8 +41,15 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=1.14.1,<1.15",
+    "ty>=0.0.34,<0.1",
 ]
 
 
 [tool.mypy]
 strict = true
+
+
+[tool.ty]
+rules.undefined-reveal = "ignore"
+analysis.respect-type-ignore-comments = false
+terminal.error-on-warning = true
