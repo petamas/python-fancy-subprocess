@@ -166,7 +166,7 @@ def run(
     cwd = kwargs.get('cwd')
     encoding = kwargs.get('encoding')
     errors = value_or(kwargs.get('errors'), 'replace')
-    replace_fffd_with_question_mark = value_or(kwargs.get('replace_fffd_with_question_mark'), True)
+    replace_fffd_with_question_mark = value_or(kwargs.get('replace_fffd_with_question_mark'), True)
 
     if message_quiet:
         print_message = silenced_print
