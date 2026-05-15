@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+import oslex
 from typing_extensions import Unpack
 
 from fancy_subprocess._exit_code import stringify_exit_code
@@ -23,7 +24,6 @@ from fancy_subprocess._run_param import AnyExitCode
 from fancy_subprocess._run_param import RunParams
 from fancy_subprocess._run_param import Success
 from fancy_subprocess._run_param import check_run_params
-from fancy_subprocess._utils import oslex_join
 from fancy_subprocess._utils import value_or
 
 
@@ -98,9 +98,9 @@ class RunError(Exception):
                 exit_code_comment = f' ({exit_code_str})'
             else:
                 exit_code_comment = ''
-            return f'Command failed with exit code {self.exit_code}{exit_code_comment}: {oslex_join(self.cmd)}'
+            return f'Command failed with exit code {self.exit_code}{exit_code_comment}: {oslex.join(self.cmd)}'
         else:
-            return f'Exception {type(self.result).__name__} with message "{str(self.result)}" was raised while trying to run command: {oslex_join(self.cmd)}'
+            return f'Exception {type(self.result).__name__} with message "{str(self.result)}" was raised while trying to run command: {oslex.join(self.cmd)}'
 
     def __str__(self) -> str:
         return self.message
@@ -151,9 +151,9 @@ def run(
     message_quiet = value_or(kwargs.get('message_quiet'), False)
     output_quiet = value_or(kwargs.get('output_quiet'), False)
     if output_quiet:
-        default_description = f'Running command (output silenced): {oslex_join(cmd)}'
+        default_description = f'Running command (output silenced): {oslex.join(cmd)}'
     else:
-        default_description = f'Running command: {oslex_join(cmd)}'
+        default_description = f'Running command: {oslex.join(cmd)}'
     description = value_or(kwargs.get('description'), default_description)
     success: Success = value_or(kwargs.get('success'), [0])
     flush_before_subprocess = value_or(kwargs.get('flush_before_subprocess'), True)
