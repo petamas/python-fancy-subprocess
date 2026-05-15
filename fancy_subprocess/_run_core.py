@@ -43,7 +43,6 @@ class RunResult:
     output: str = ''
 
 
-@dataclass(kw_only=True, frozen=True)
 class RunError(Exception):
     """
     `fancy_subprocess.run()` and similar functions raise `RunError` on error. There are two kinds of errors that result in a `RunError`:
@@ -63,6 +62,11 @@ class RunError(Exception):
     - `output: str` - Combination of the process's output on stdout and stderr. Raises `ValueError` if `completed` is `False`.
     - `oserror: OSError` - The `OSError` raised by `subprocess.Popen()`. Raises `ValueError` if `completed` is `True`.
     """
+
+    # See test_runerror_picklable() in test_runerror_bugs.py for why these arguments are positional only
+    def __init__(self, cmd: Sequence[str | Path], result: RunResult | OSError = RunResult(), /) -> None:
+        self.cmd = cmd
+        self.result = result
 
     cmd: Sequence[str | Path]
     result: RunResult | OSError = RunResult()
@@ -226,12 +230,12 @@ def run(
                 proc.wait()
                 result = RunResult(exit_code=proc.returncode, output=output.removesuffix('\n'))
         except OSError as e:
-            raise RunError(cmd=cmd, result=e) from e
+            raise RunError(cmd, e) from e
 
         if isinstance(success, AnyExitCode) or result.exit_code in success:
             return result
         else:
-            raise RunError(cmd=cmd, result=result)
+            raise RunError(cmd, result)
 
     sleep_seconds = retry_initial_sleep_seconds
     for attempts_left in range(retry, 0, -1):
