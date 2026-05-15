@@ -74,21 +74,21 @@ class RunError(Exception):
         if isinstance(self.result, RunResult):
             return self.result.exit_code
         else:
-            raise ValueError('...')
+            raise ValueError('"exit_code" can only be queried if "completed" is True')
 
     @property
     def output(self) -> str:
         if isinstance(self.result, RunResult):
             return self.result.output
         else:
-            raise ValueError('...')
+            raise ValueError('"output" can only be queried if "completed" is True')
 
     @property
     def oserror(self) -> OSError:
         if isinstance(self.result, OSError):
             return self.result
         else:
-            raise ValueError('...')
+            raise ValueError('"oserror" can only be queried if "completed" is False')
 
     @property
     def message(self) -> str:
