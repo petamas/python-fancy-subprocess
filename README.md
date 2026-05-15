@@ -28,7 +28,7 @@ Arguments (all of them except `cmd` are optional):
     - The type of this argument is also aliased as `fancy_subprocess.Success`.
 - `flush_before_subprocess: bool` - If `True`, flushes both the standard output and error streams before running the command. If unspecified or set to `None`, defaults to `True`.
 - `trim_output_lines: bool` - If `True`, remove trailing whitespace from the lines of the output of the command before calling `print_output` and adding them to the `output` field of `RunResult`. If unspecified or set to `None`, defaults to `True`.
-- `max_output_size: int` - Maximum number of characters to be recorded in the `output` field of `RunResult`. If the command produces more than `max_output_size` characters, only the last `max_output_size` will be recorded. If unspecified or set to `None`, defaults to 10,000,000.
+- `max_output_size: int | NoLimit` - Maximum number of characters to be recorded in the `output` field of `RunResult`. If the command produces more than `max_output_size` characters, only the last `max_output_size` will be recorded. If set to `fancy_subprocess.NO_LIMIT`, then the full output will be recorded. If unspecified or set to `None`, defaults to 10,000,000.
 - `retry: int` - Number of times to retry running the command on failure. Note that the total number of attempts is one greater than what's specified. (I.e. `retry=2` attempts to run the command 3 times.) If unspecified or set to `None`, defaults to 0.
 - `retry_initial_sleep_seconds: float` - Number of seconds to wait before retrying for the first time. If unspecified or set to `None`, defaults to 10.
 - `retry_backoff: float` - Factor used to increase wait times before subsequent retries. If unspecified or set to `None`, defaults to 2.

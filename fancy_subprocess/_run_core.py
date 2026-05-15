@@ -21,6 +21,8 @@ from fancy_subprocess._print import PrintFunction
 from fancy_subprocess._print import default_print
 from fancy_subprocess._print import silenced_print
 from fancy_subprocess._run_param import AnyExitCode
+from fancy_subprocess._run_param import MaxOutputSize
+from fancy_subprocess._run_param import NoLimit
 from fancy_subprocess._run_param import RunParams
 from fancy_subprocess._run_param import Success
 from fancy_subprocess._run_param import check_run_params
@@ -135,7 +137,7 @@ def run(
     - `success: Sequence[int] | AnyExitCode` - List of exit codes that should be considered successful. If set to `fancy_subprocess.ANY_EXIT_CODE`, then all exit codes are considered successful. If unspecified or set to `None`, defaults to `[0]`. Note that 0 is not automatically included in the list of successful exit codes, so if a list without 0 is specified, then the function will consider 0 a failure.
     - `flush_before_subprocess: bool` - If `True`, flushes both the standard output and error streams before running the command. If unspecified or set to `None`, defaults to `True`.
     - `trim_output_lines: bool` - If `True`, remove trailing whitespace from the lines of the output of the command before calling `print_output` and adding them to the `output` field of `RunResult`. If unspecified or set to `None`, defaults to `True`.
-    - `max_output_size: int` - Maximum number of characters to be recorded in the `output` field of `RunResult`. If the command produces more than `max_output_size` characters, only the last `max_output_size` will be recorded. If unspecified or set to `None`, defaults to 10,000,000.
+    - `max_output_size: int | NoLimit` - Maximum number of characters to be recorded in the `output` field of `RunResult`. If the command produces more than `max_output_size` characters, only the last `max_output_size` will be recorded. If set to `fancy_subprocess.NO_LIMIT`, then the full output will be recorded. If unspecified or set to `None`, defaults to 10,000,000.
     - `retry: int` - Number of times to retry running the command on failure. Note that the total number of attempts is one greater than what's specified. (I.e. `retry=2` attempts to run the command 3 times.) If unspecified or set to `None`, defaults to 0.
     - `retry_initial_sleep_seconds: float` - Number of seconds to wait before retrying for the first time. If unspecified or set to `None`, defaults to 10.
     - `retry_backoff: float` - Factor used to increase wait times before subsequent retries. If unspecified or set to `None`, defaults to 2.
@@ -158,7 +160,7 @@ def run(
     success: Success = value_or(kwargs.get('success'), [0])
     flush_before_subprocess = value_or(kwargs.get('flush_before_subprocess'), True)
     trim_output_lines = value_or(kwargs.get('trim_output_lines'), True)
-    max_output_size = value_or(kwargs.get('max_output_size'), 10 * 1000 * 1000)
+    max_output_size: MaxOutputSize = value_or(kwargs.get('max_output_size'), 10 * 1000 * 1000)
     retry = value_or(kwargs.get('retry'), 0)
     retry_initial_sleep_seconds = value_or(kwargs.get('retry_initial_sleep_seconds'), 10)
     retry_backoff = value_or(kwargs.get('retry_backoff'), 2)
@@ -217,8 +219,9 @@ def run(
                     print_output(line)
 
                     output += line + '\n'
-                    if len(output) > max_output_size + 1:
-                        output = output[-max_output_size - 1 :]  # drop the beginning of the string
+                    if not isinstance(max_output_size, NoLimit):
+                        if len(output) > max_output_size + 1:
+                            output = output[-max_output_size - 1 :]  # drop the beginning of the string
 
                 proc.wait()
                 result = RunResult(exit_code=proc.returncode, output=output.removesuffix('\n'))

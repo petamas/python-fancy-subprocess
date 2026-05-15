@@ -5,6 +5,9 @@ __all__ = [
     'check_run_params',
     'EnvOverrides',
     'force_run_params',
+    'MaxOutputSize',
+    'NO_LIMIT',
+    'NoLimit',
     'RunParams',
     'Success',
 ]
@@ -31,6 +34,19 @@ ANY_EXIT_CODE = AnyExitCode()
 
 Success = Sequence[int] | AnyExitCode
 
+
+class NoLimit:
+    """
+    Use an instance of this class (eg. fancy_subprocess.NO_LIMIT) as the 'max_output_size' argument to make run() and related functions not constrain the size of the output string.
+    """
+
+    pass
+
+
+NO_LIMIT = NoLimit()
+
+MaxOutputSize = int | NoLimit
+
 EnvOverrides = Mapping[str, str]
 
 
@@ -41,7 +57,7 @@ class RunParams(TypedDict, total=False):
     success: Optional[Success]
     flush_before_subprocess: Optional[bool]
     trim_output_lines: Optional[bool]
-    max_output_size: Optional[int]
+    max_output_size: Optional[MaxOutputSize]
     retry: Optional[int]
     retry_initial_sleep_seconds: Optional[float]
     retry_backoff: Optional[float]
