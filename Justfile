@@ -3,12 +3,14 @@ default:
 
 [private]
 verify_with_impl python_minor_version $UV_PROJECT_ENVIRONMENT:
+    @echo UV_PROJECT_ENVIRONMENT=${UV_PROJECT_ENVIRONMENT}
     uv sync --python 3.{{python_minor_version}}
 
     uv run -m mypy .
     uv run ty check .
     uv run ruff check --target-version py3{{python_minor_version}}
     uv run ruff format --check --target-version py3{{python_minor_version}}
+    uv run -m pytest
 
 verify_with python_minor_version="14": (verify_with_impl python_minor_version ".just_venv_3_"+python_minor_version)
 
