@@ -21,6 +21,7 @@ from fancy_subprocess._print import PrintFunction
 from fancy_subprocess._print import default_print
 from fancy_subprocess._print import silenced_print
 from fancy_subprocess._run_param import AnyExitCode
+from fancy_subprocess._run_param import EnvOverrides
 from fancy_subprocess._run_param import MaxOutputSize
 from fancy_subprocess._run_param import NoLimit
 from fancy_subprocess._run_param import RunParams
@@ -112,6 +113,30 @@ class RunError(Exception):
         return self.message
 
 
+class _ResolvedRunParams:
+    def __init__(self, cmd: Sequence[str | Path], **kwargs: Unpack[RunParams]) -> None:
+        self.message_quiet: bool = value_or(kwargs.get('message_quiet'), False)
+        self.output_quiet: bool = value_or(kwargs.get('output_quiet'), False)
+        self.default_description: str
+        if self.output_quiet:
+            self.default_description = f'Running command (output silenced): {oslex.join(cmd)}'
+        else:
+            self.default_description = f'Running command: {oslex.join(cmd)}'
+        self.description: str = value_or(kwargs.get('description'), self.default_description)
+        self.success: Success = value_or(kwargs.get('success'), [0])
+        self.flush_before_subprocess: bool = value_or(kwargs.get('flush_before_subprocess'), True)
+        self.trim_output_lines: bool = value_or(kwargs.get('trim_output_lines'), True)
+        self.max_output_size: MaxOutputSize = value_or(kwargs.get('max_output_size'), 10 * 1000 * 1000)
+        self.retry: int = value_or(kwargs.get('retry'), 0)
+        self.retry_initial_sleep_seconds: float = value_or(kwargs.get('retry_initial_sleep_seconds'), 10)
+        self.retry_backoff: float = value_or(kwargs.get('retry_backoff'), 2)
+        self.env_overrides: EnvOverrides = value_or(kwargs.get('env_overrides'), dict())
+        self.cwd: Optional[str | Path] = kwargs.get('cwd')
+        self.encoding: Optional[str] = kwargs.get('encoding')
+        self.errors: str = value_or(kwargs.get('errors'), 'replace')
+        self.replace_fffd_with_question_mark: bool = value_or(kwargs.get('replace_fffd_with_question_mark'), True)
+
+
 def run(
     cmd: Sequence[str | Path],
     *,
@@ -154,46 +179,28 @@ def run(
 
     check_run_params(**kwargs)
 
-    message_quiet = value_or(kwargs.get('message_quiet'), False)
-    output_quiet = value_or(kwargs.get('output_quiet'), False)
-    if output_quiet:
-        default_description = f'Running command (output silenced): {oslex.join(cmd)}'
-    else:
-        default_description = f'Running command: {oslex.join(cmd)}'
-    description = value_or(kwargs.get('description'), default_description)
-    success: Success = value_or(kwargs.get('success'), [0])
-    flush_before_subprocess = value_or(kwargs.get('flush_before_subprocess'), True)
-    trim_output_lines = value_or(kwargs.get('trim_output_lines'), True)
-    max_output_size: MaxOutputSize = value_or(kwargs.get('max_output_size'), 10 * 1000 * 1000)
-    retry = value_or(kwargs.get('retry'), 0)
-    retry_initial_sleep_seconds = value_or(kwargs.get('retry_initial_sleep_seconds'), 10)
-    retry_backoff = value_or(kwargs.get('retry_backoff'), 2)
-    env_overrides = value_or(kwargs.get('env_overrides'), dict())
-    cwd = kwargs.get('cwd')
-    encoding = kwargs.get('encoding')
-    errors = value_or(kwargs.get('errors'), 'replace')
-    replace_fffd_with_question_mark = value_or(kwargs.get('replace_fffd_with_question_mark'), True)
+    params = _ResolvedRunParams(cmd, **kwargs)
 
-    if message_quiet:
+    if params.message_quiet:
         print_message = silenced_print
     else:
         print_message = value_or(print_message, default_print)
 
-    if output_quiet:
+    if params.output_quiet:
         print_output = silenced_print
     else:
         print_output = value_or(print_output, default_print)
 
     env = dict(os.environ)
     if sys.platform == 'win32':
-        env.update((key.upper(), value) for key, value in env_overrides.items())
+        env.update((key.upper(), value) for key, value in params.env_overrides.items())
     else:
-        env.update(env_overrides)
+        env.update(params.env_overrides)
 
     def attempt_run() -> RunResult:
-        print_message(description)
+        print_message(params.description)
 
-        if flush_before_subprocess:
+        if params.flush_before_subprocess:
             sys.stdout.flush()
             sys.stderr.flush()
 
@@ -206,39 +213,39 @@ def run(
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                cwd=cwd,
+                cwd=params.cwd,
                 env=env,
-                encoding=encoding,
-                errors=errors,
+                encoding=params.encoding,
+                errors=params.errors,
             ) as proc:
                 assert proc.stdout is not None  # passing stdout=subprocess.PIPE guarantees this
 
                 for line in iter(proc.stdout.readline, ''):
                     line = line.removesuffix('\n')
-                    if trim_output_lines:
+                    if params.trim_output_lines:
                         line = line.rstrip()
-                    if replace_fffd_with_question_mark:
+                    if params.replace_fffd_with_question_mark:
                         line = line.replace('\ufffd', '?')
 
                     print_output(line)
 
                     output += line + '\n'
-                    if not isinstance(max_output_size, NoLimit):
-                        if len(output) > max_output_size + 1:
-                            output = output[-max_output_size - 1 :]  # drop the beginning of the string
+                    if not isinstance(params.max_output_size, NoLimit):
+                        if len(output) > params.max_output_size + 1:
+                            output = output[-params.max_output_size - 1 :]  # drop the beginning of the string
 
                 proc.wait()
                 result = RunResult(exit_code=proc.returncode, output=output.removesuffix('\n'))
         except OSError as e:
             raise RunError(cmd, e) from e
 
-        if isinstance(success, AnyExitCode) or result.exit_code in success:
+        if isinstance(params.success, AnyExitCode) or result.exit_code in params.success:
             return result
         else:
             raise RunError(cmd, result)
 
-    sleep_seconds = retry_initial_sleep_seconds
-    for attempts_left in range(retry, 0, -1):
+    sleep_seconds = params.retry_initial_sleep_seconds
+    for attempts_left in range(params.retry, 0, -1):
         try:
             return attempt_run()
         except RunError as e:
@@ -249,6 +256,6 @@ def run(
                 plural = ''
             print_message(f'Retrying in {sleep_seconds} seconds ({attempts_left} attempt{plural} left)...')
             time.sleep(sleep_seconds)
-            sleep_seconds *= retry_backoff
+            sleep_seconds *= params.retry_backoff
 
     return attempt_run()
