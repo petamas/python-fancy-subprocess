@@ -137,6 +137,61 @@ class _ResolvedRunParams:
         self.replace_fffd_with_question_mark: bool = value_or(kwargs.get('replace_fffd_with_question_mark'), True)
 
 
+def _attempt_run(
+    cmd: Sequence[str | Path],
+    *,
+    print_message: PrintFunction,
+    print_output: PrintFunction,
+    env: dict[str, str],
+    params: _ResolvedRunParams,
+) -> RunResult:
+    print_message(params.description)
+
+    if params.flush_before_subprocess:
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+    output = ''
+    try:
+        with subprocess.Popen(
+            cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            cwd=params.cwd,
+            env=env,
+            encoding=params.encoding,
+            errors=params.errors,
+        ) as proc:
+            assert proc.stdout is not None  # passing stdout=subprocess.PIPE guarantees this
+
+            for line in iter(proc.stdout.readline, ''):
+                line = line.removesuffix('\n')
+                if params.trim_output_lines:
+                    line = line.rstrip()
+                if params.replace_fffd_with_question_mark:
+                    line = line.replace('\ufffd', '?')
+
+                print_output(line)
+
+                output += line + '\n'
+                if not isinstance(params.max_output_size, NoLimit):
+                    if len(output) > params.max_output_size + 1:
+                        output = output[-params.max_output_size - 1 :]  # drop the beginning of the string
+
+            proc.wait()
+            result = RunResult(exit_code=proc.returncode, output=output.removesuffix('\n'))
+    except OSError as e:
+        raise RunError(cmd, e) from e
+
+    if isinstance(params.success, AnyExitCode) or result.exit_code in params.success:
+        return result
+    else:
+        raise RunError(cmd, result)
+
+
 def run(
     cmd: Sequence[str | Path],
     *,
@@ -197,57 +252,10 @@ def run(
     else:
         env.update(params.env_overrides)
 
-    def attempt_run() -> RunResult:
-        print_message(params.description)
-
-        if params.flush_before_subprocess:
-            sys.stdout.flush()
-            sys.stderr.flush()
-
-        output = ''
-        try:
-            with subprocess.Popen(
-                cmd,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                cwd=params.cwd,
-                env=env,
-                encoding=params.encoding,
-                errors=params.errors,
-            ) as proc:
-                assert proc.stdout is not None  # passing stdout=subprocess.PIPE guarantees this
-
-                for line in iter(proc.stdout.readline, ''):
-                    line = line.removesuffix('\n')
-                    if params.trim_output_lines:
-                        line = line.rstrip()
-                    if params.replace_fffd_with_question_mark:
-                        line = line.replace('\ufffd', '?')
-
-                    print_output(line)
-
-                    output += line + '\n'
-                    if not isinstance(params.max_output_size, NoLimit):
-                        if len(output) > params.max_output_size + 1:
-                            output = output[-params.max_output_size - 1 :]  # drop the beginning of the string
-
-                proc.wait()
-                result = RunResult(exit_code=proc.returncode, output=output.removesuffix('\n'))
-        except OSError as e:
-            raise RunError(cmd, e) from e
-
-        if isinstance(params.success, AnyExitCode) or result.exit_code in params.success:
-            return result
-        else:
-            raise RunError(cmd, result)
-
     sleep_seconds = params.retry_initial_sleep_seconds
     for attempts_left in range(params.retry, 0, -1):
         try:
-            return attempt_run()
+            return _attempt_run(cmd, print_message=print_message, print_output=print_output, env=env, params=params)
         except RunError as e:
             print_message(str(e))
             if attempts_left != 1:
@@ -258,4 +266,4 @@ def run(
             time.sleep(sleep_seconds)
             sleep_seconds *= params.retry_backoff
 
-    return attempt_run()
+    return _attempt_run(cmd, print_message=print_message, print_output=print_output, env=env, params=params)
